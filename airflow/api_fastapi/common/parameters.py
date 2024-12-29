@@ -40,13 +40,20 @@ from sqlalchemy import Column, case, or_
 from sqlalchemy.inspection import inspect
 
 from airflow.models import Base
-from airflow.models.asset import AssetModel, DagScheduleAssetReference, TaskOutletAssetReference
+from airflow.models.asset import (
+    AssetAliasModel,
+    AssetModel,
+    DagScheduleAssetReference,
+    TaskOutletAssetReference,
+)
 from airflow.models.dag import DagModel, DagTag
 from airflow.models.dagrun import DagRun
 from airflow.models.taskinstance import TaskInstance
+from airflow.models.variable import Variable
 from airflow.typing_compat import Self
 from airflow.utils import timezone
 from airflow.utils.state import DagRunState, TaskInstanceState
+from airflow.utils.types import DagRunType
 
 if TYPE_CHECKING:
     from sqlalchemy.sql import ColumnElement, Select
@@ -226,6 +233,7 @@ class FilterOptionEnum(Enum):
     IN = "in"
     NOT_IN = "not_in"
     ANY_EQUAL = "any_eq"
+    IS_NONE = "is_none"
 
 
 class FilterParam(BaseParam[T]):
@@ -244,7 +252,7 @@ class FilterParam(BaseParam[T]):
         self.filter_option: FilterOptionEnum = filter_option
 
     def to_orm(self, select: Select) -> Select:
-        if isinstance(self.value, list) and not self.value and self.skip_none:
+        if isinstance(self.value, (list, str)) and not self.value and self.skip_none:
             return select
         if self.value is None and self.skip_none:
             return select
@@ -273,6 +281,13 @@ class FilterParam(BaseParam[T]):
             return select.where(self.attribute > self.value)
         if self.filter_option == FilterOptionEnum.GREATER_THAN_EQUAL:
             return select.where(self.attribute >= self.value)
+        if self.filter_option == FilterOptionEnum.IS_NONE:
+            if self.value is None:
+                return select
+            if self.value is False:
+                return select.where(self.attribute.is_not(None))
+            if self.value is True:
+                return select.where(self.attribute.is_(None))
         raise ValueError(f"Invalid filter option {self.filter_option} for value {self.value}")
 
     def depends(self, *args: Any, **kwargs: Any) -> Self:
@@ -514,6 +529,32 @@ QueryDagRunStateFilter = Annotated[
     ),
 ]
 
+
+def _transform_dag_run_types(types: list[str] | None) -> list[DagRunType | None] | None:
+    try:
+        if not types:
+            return None
+        return [None if run_type in ("none", None) else DagRunType(run_type) for run_type in types]
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid value for run type. Valid values are {', '.join(DagRunType)}",
+        )
+
+
+QueryDagRunRunTypesFilter = Annotated[
+    FilterParam[list[str]],
+    Depends(
+        filter_param_factory(
+            attribute=DagRun.run_type,
+            _type=list[str],
+            filter_option=FilterOptionEnum.ANY_EQUAL,
+            default_factory=list,
+            transform_callable=_transform_dag_run_types,
+        )
+    ),
+]
+
 # DAGTags
 QueryDagTagPatternSearch = Annotated[
     _SearchParam, Depends(search_param_factory(DagTag.name, "tag_name_pattern"))
@@ -522,16 +563,17 @@ QueryDagTagPatternSearch = Annotated[
 
 # TI
 def _transform_ti_states(states: list[str] | None) -> list[TaskInstanceState | None] | None:
+    """Transform a list of state strings into a list of TaskInstanceState enums handling special 'None' cases."""
+    if not states:
+        return None
+
     try:
-        if not states:
-            return None
         return [None if s in ("none", None) else TaskInstanceState(s) for s in states]
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid value for state. Valid values are {', '.join(TaskInstanceState)}",
         )
-    return states
 
 
 QueryTIStateFilter = Annotated[
@@ -566,9 +608,48 @@ QueryTIExecutorFilter = Annotated[
         )
     ),
 ]
+QueryTITaskDisplayNamePatternSearch = Annotated[
+    _SearchParam, Depends(search_param_factory(TaskInstance.task_display_name, "task_display_name_pattern"))
+]
 
 # Assets
+QueryAssetNamePatternSearch = Annotated[
+    _SearchParam, Depends(search_param_factory(AssetModel.name, "name_pattern"))
+]
 QueryUriPatternSearch = Annotated[_SearchParam, Depends(search_param_factory(AssetModel.uri, "uri_pattern"))]
+QueryAssetAliasNamePatternSearch = Annotated[
+    _SearchParam, Depends(search_param_factory(AssetAliasModel.name, "name_pattern"))
+]
 QueryAssetDagIdPatternSearch = Annotated[
     _DagIdAssetReferenceFilter, Depends(_DagIdAssetReferenceFilter().depends)
+]
+
+# Variables
+QueryVariableKeyPatternSearch = Annotated[
+    _SearchParam, Depends(search_param_factory(Variable.key, "variable_key_pattern"))
+]
+
+
+# UI Shared
+def _optional_boolean(value: bool | None) -> bool | None:
+    return value if value is not None else False
+
+
+QueryIncludeUpstream = Annotated[Union[bool], AfterValidator(_optional_boolean)]
+QueryIncludeDownstream = Annotated[Union[bool], AfterValidator(_optional_boolean)]
+
+state_priority: list[None | TaskInstanceState] = [
+    TaskInstanceState.FAILED,
+    TaskInstanceState.UPSTREAM_FAILED,
+    TaskInstanceState.UP_FOR_RETRY,
+    TaskInstanceState.UP_FOR_RESCHEDULE,
+    TaskInstanceState.QUEUED,
+    TaskInstanceState.SCHEDULED,
+    TaskInstanceState.DEFERRED,
+    TaskInstanceState.RUNNING,
+    TaskInstanceState.RESTARTING,
+    None,
+    TaskInstanceState.SUCCESS,
+    TaskInstanceState.SKIPPED,
+    TaskInstanceState.REMOVED,
 ]

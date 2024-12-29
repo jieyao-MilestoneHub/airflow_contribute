@@ -21,6 +21,7 @@ import {
   DashboardService,
   EventLogService,
   ExtraLinksService,
+  GridService,
   ImportErrorService,
   JobService,
   MonitorService,
@@ -87,6 +88,7 @@ export const useAssetServiceNextRunAssets = <
  * @param data The data for the request.
  * @param data.limit
  * @param data.offset
+ * @param data.namePattern
  * @param data.uriPattern
  * @param data.dagIds
  * @param data.orderBy
@@ -101,12 +103,14 @@ export const useAssetServiceGetAssets = <
   {
     dagIds,
     limit,
+    namePattern,
     offset,
     orderBy,
     uriPattern,
   }: {
     dagIds?: string[];
     limit?: number;
+    namePattern?: string;
     offset?: number;
     orderBy?: string;
     uriPattern?: string;
@@ -116,17 +120,91 @@ export const useAssetServiceGetAssets = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAssetServiceGetAssetsKeyFn(
-      { dagIds, limit, offset, orderBy, uriPattern },
+      { dagIds, limit, namePattern, offset, orderBy, uriPattern },
       queryKey,
     ),
     queryFn: () =>
       AssetService.getAssets({
         dagIds,
         limit,
+        namePattern,
         offset,
         orderBy,
         uriPattern,
       }) as TData,
+    ...options,
+  });
+/**
+ * Get Asset Aliases
+ * Get asset aliases.
+ * @param data The data for the request.
+ * @param data.limit
+ * @param data.offset
+ * @param data.namePattern
+ * @param data.orderBy
+ * @returns AssetAliasCollectionResponse Successful Response
+ * @throws ApiError
+ */
+export const useAssetServiceGetAssetAliases = <
+  TData = Common.AssetServiceGetAssetAliasesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    limit,
+    namePattern,
+    offset,
+    orderBy,
+  }: {
+    limit?: number;
+    namePattern?: string;
+    offset?: number;
+    orderBy?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAssetServiceGetAssetAliasesKeyFn(
+      { limit, namePattern, offset, orderBy },
+      queryKey,
+    ),
+    queryFn: () =>
+      AssetService.getAssetAliases({
+        limit,
+        namePattern,
+        offset,
+        orderBy,
+      }) as TData,
+    ...options,
+  });
+/**
+ * Get Asset Alias
+ * Get an asset alias.
+ * @param data The data for the request.
+ * @param data.assetAliasId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useAssetServiceGetAssetAlias = <
+  TData = Common.AssetServiceGetAssetAliasDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    assetAliasId,
+  }: {
+    assetAliasId: number;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAssetServiceGetAssetAliasKeyFn(
+      { assetAliasId },
+      queryKey,
+    ),
+    queryFn: () => AssetService.getAssetAlias({ assetAliasId }) as TData,
     ...options,
   });
 /**
@@ -141,6 +219,8 @@ export const useAssetServiceGetAssets = <
  * @param data.sourceTaskId
  * @param data.sourceRunId
  * @param data.sourceMapIndex
+ * @param data.timestampGte
+ * @param data.timestampLte
  * @returns AssetEventCollectionResponse Successful Response
  * @throws ApiError
  */
@@ -158,6 +238,8 @@ export const useAssetServiceGetAssetEvents = <
     sourceMapIndex,
     sourceRunId,
     sourceTaskId,
+    timestampGte,
+    timestampLte,
   }: {
     assetId?: number;
     limit?: number;
@@ -167,6 +249,8 @@ export const useAssetServiceGetAssetEvents = <
     sourceMapIndex?: number;
     sourceRunId?: string;
     sourceTaskId?: string;
+    timestampGte?: string;
+    timestampLte?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
@@ -182,6 +266,8 @@ export const useAssetServiceGetAssetEvents = <
         sourceMapIndex,
         sourceRunId,
         sourceTaskId,
+        timestampGte,
+        timestampLte,
       },
       queryKey,
     ),
@@ -195,6 +281,8 @@ export const useAssetServiceGetAssetEvents = <
         sourceMapIndex,
         sourceRunId,
         sourceTaskId,
+        timestampGte,
+        timestampLte,
       }) as TData,
     ...options,
   });
@@ -202,7 +290,7 @@ export const useAssetServiceGetAssetEvents = <
  * Get Asset Queued Events
  * Get queued asset events for an asset.
  * @param data The data for the request.
- * @param data.uri
+ * @param data.assetId
  * @param data.before
  * @returns QueuedEventCollectionResponse Successful Response
  * @throws ApiError
@@ -213,28 +301,29 @@ export const useAssetServiceGetAssetQueuedEvents = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    assetId,
     before,
-    uri,
   }: {
+    assetId: number;
     before?: string;
-    uri: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAssetServiceGetAssetQueuedEventsKeyFn(
-      { before, uri },
+      { assetId, before },
       queryKey,
     ),
-    queryFn: () => AssetService.getAssetQueuedEvents({ before, uri }) as TData,
+    queryFn: () =>
+      AssetService.getAssetQueuedEvents({ assetId, before }) as TData,
     ...options,
   });
 /**
  * Get Asset
  * Get an asset.
  * @param data The data for the request.
- * @param data.uri
+ * @param data.assetId
  * @returns AssetResponse Successful Response
  * @throws ApiError
  */
@@ -244,16 +333,16 @@ export const useAssetServiceGetAsset = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    uri,
+    assetId,
   }: {
-    uri: string;
+    assetId: number;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAssetServiceGetAssetKeyFn({ uri }, queryKey),
-    queryFn: () => AssetService.getAsset({ uri }) as TData,
+    queryKey: Common.UseAssetServiceGetAssetKeyFn({ assetId }, queryKey),
+    queryFn: () => AssetService.getAsset({ assetId }) as TData,
     ...options,
   });
 /**
@@ -294,7 +383,7 @@ export const useAssetServiceGetDagAssetQueuedEvents = <
  * Get a queued asset event for a DAG.
  * @param data The data for the request.
  * @param data.dagId
- * @param data.uri
+ * @param data.assetId
  * @param data.before
  * @returns QueuedEventResponse Successful Response
  * @throws ApiError
@@ -305,24 +394,24 @@ export const useAssetServiceGetDagAssetQueuedEvent = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    assetId,
     before,
     dagId,
-    uri,
   }: {
+    assetId: number;
     before?: string;
     dagId: string;
-    uri: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAssetServiceGetDagAssetQueuedEventKeyFn(
-      { before, dagId, uri },
+      { assetId, before, dagId },
       queryKey,
     ),
     queryFn: () =>
-      AssetService.getDagAssetQueuedEvent({ before, dagId, uri }) as TData,
+      AssetService.getDagAssetQueuedEvent({ assetId, before, dagId }) as TData,
     ...options,
   });
 /**
@@ -419,6 +508,7 @@ export const useConfigServiceGetConfigValue = <
  * @param data.offset
  * @param data.tags
  * @param data.owners
+ * @param data.dagIds
  * @param data.dagIdPattern
  * @param data.dagDisplayNamePattern
  * @param data.onlyActive
@@ -435,6 +525,7 @@ export const useDagsServiceRecentDagRuns = <
   {
     dagDisplayNamePattern,
     dagIdPattern,
+    dagIds,
     dagRunsLimit,
     lastDagRunState,
     limit,
@@ -446,6 +537,7 @@ export const useDagsServiceRecentDagRuns = <
   }: {
     dagDisplayNamePattern?: string;
     dagIdPattern?: string;
+    dagIds?: string[];
     dagRunsLimit?: number;
     lastDagRunState?: DagRunState;
     limit?: number;
@@ -463,6 +555,7 @@ export const useDagsServiceRecentDagRuns = <
       {
         dagDisplayNamePattern,
         dagIdPattern,
+        dagIds,
         dagRunsLimit,
         lastDagRunState,
         limit,
@@ -478,6 +571,7 @@ export const useDagsServiceRecentDagRuns = <
       DagsService.recentDagRuns({
         dagDisplayNamePattern,
         dagIdPattern,
+        dagIds,
         dagRunsLimit,
         lastDagRunState,
         limit,
@@ -527,9 +621,10 @@ export const useDashboardServiceHistoricalMetrics = <
  * Get Structure Data.
  * @param data The data for the request.
  * @param data.dagId
- * @param data.root
  * @param data.includeUpstream
  * @param data.includeDownstream
+ * @param data.root
+ * @param data.externalDependencies
  * @returns StructureDataResponse Successful Response
  * @throws ApiError
  */
@@ -540,11 +635,13 @@ export const useStructureServiceStructureData = <
 >(
   {
     dagId,
+    externalDependencies,
     includeDownstream,
     includeUpstream,
     root,
   }: {
     dagId: string;
+    externalDependencies?: boolean;
     includeDownstream?: boolean;
     includeUpstream?: boolean;
     root?: string;
@@ -554,15 +651,63 @@ export const useStructureServiceStructureData = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseStructureServiceStructureDataKeyFn(
-      { dagId, includeDownstream, includeUpstream, root },
+      { dagId, externalDependencies, includeDownstream, includeUpstream, root },
       queryKey,
     ),
     queryFn: () =>
       StructureService.structureData({
         dagId,
+        externalDependencies,
         includeDownstream,
         includeUpstream,
         root,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Backfills
+ * @param data The data for the request.
+ * @param data.limit
+ * @param data.offset
+ * @param data.orderBy
+ * @param data.dagId
+ * @param data.active
+ * @returns BackfillCollectionResponse Successful Response
+ * @throws ApiError
+ */
+export const useBackfillServiceListBackfills = <
+  TData = Common.BackfillServiceListBackfillsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    active,
+    dagId,
+    limit,
+    offset,
+    orderBy,
+  }: {
+    active?: boolean;
+    dagId?: string;
+    limit?: number;
+    offset?: number;
+    orderBy?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseBackfillServiceListBackfillsKeyFn(
+      { active, dagId, limit, offset, orderBy },
+      queryKey,
+    ),
+    queryFn: () =>
+      BackfillService.listBackfills({
+        active,
+        dagId,
+        limit,
+        offset,
+        orderBy,
       }) as TData,
     ...options,
   });
@@ -576,8 +721,8 @@ export const useStructureServiceStructureData = <
  * @returns BackfillCollectionResponse Successful Response
  * @throws ApiError
  */
-export const useBackfillServiceListBackfills = <
-  TData = Common.BackfillServiceListBackfillsDefaultResponse,
+export const useBackfillServiceListBackfills1 = <
+  TData = Common.BackfillServiceListBackfills1DefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -596,12 +741,17 @@ export const useBackfillServiceListBackfills = <
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseBackfillServiceListBackfillsKeyFn(
+    queryKey: Common.UseBackfillServiceListBackfills1KeyFn(
       { dagId, limit, offset, orderBy },
       queryKey,
     ),
     queryFn: () =>
-      BackfillService.listBackfills({ dagId, limit, offset, orderBy }) as TData,
+      BackfillService.listBackfills1({
+        dagId,
+        limit,
+        offset,
+        orderBy,
+      }) as TData,
     ...options,
   });
 /**
@@ -630,6 +780,90 @@ export const useBackfillServiceGetBackfill = <
       queryKey,
     ),
     queryFn: () => BackfillService.getBackfill({ backfillId }) as TData,
+    ...options,
+  });
+/**
+ * Grid Data
+ * Return grid data.
+ * @param data The data for the request.
+ * @param data.dagId
+ * @param data.includeUpstream
+ * @param data.includeDownstream
+ * @param data.logicalDateGte
+ * @param data.logicalDateLte
+ * @param data.root
+ * @param data.offset
+ * @param data.runType
+ * @param data.state
+ * @param data.limit
+ * @param data.orderBy
+ * @returns GridResponse Successful Response
+ * @throws ApiError
+ */
+export const useGridServiceGridData = <
+  TData = Common.GridServiceGridDataDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    dagId,
+    includeDownstream,
+    includeUpstream,
+    limit,
+    logicalDateGte,
+    logicalDateLte,
+    offset,
+    orderBy,
+    root,
+    runType,
+    state,
+  }: {
+    dagId: string;
+    includeDownstream?: boolean;
+    includeUpstream?: boolean;
+    limit?: number;
+    logicalDateGte?: string;
+    logicalDateLte?: string;
+    offset?: number;
+    orderBy?: string;
+    root?: string;
+    runType?: string[];
+    state?: string[];
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseGridServiceGridDataKeyFn(
+      {
+        dagId,
+        includeDownstream,
+        includeUpstream,
+        limit,
+        logicalDateGte,
+        logicalDateLte,
+        offset,
+        orderBy,
+        root,
+        runType,
+        state,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      GridService.gridData({
+        dagId,
+        includeDownstream,
+        includeUpstream,
+        limit,
+        logicalDateGte,
+        logicalDateLte,
+        offset,
+        orderBy,
+        root,
+        runType,
+        state,
+      }) as TData,
     ...options,
   });
 /**
@@ -1734,6 +1968,7 @@ export const useTaskInstanceServiceGetMappedTaskInstance = <
  * @param data The data for the request.
  * @param data.dagId
  * @param data.dagRunId
+ * @param data.taskId
  * @param data.logicalDateGte
  * @param data.logicalDateLte
  * @param data.startDateGte
@@ -1744,6 +1979,7 @@ export const useTaskInstanceServiceGetMappedTaskInstance = <
  * @param data.updatedAtLte
  * @param data.durationGte
  * @param data.durationLte
+ * @param data.taskDisplayNamePattern
  * @param data.state
  * @param data.pool
  * @param data.queue
@@ -1777,6 +2013,8 @@ export const useTaskInstanceServiceGetTaskInstances = <
     startDateGte,
     startDateLte,
     state,
+    taskDisplayNamePattern,
+    taskId,
     updatedAtGte,
     updatedAtLte,
   }: {
@@ -1797,6 +2035,8 @@ export const useTaskInstanceServiceGetTaskInstances = <
     startDateGte?: string;
     startDateLte?: string;
     state?: string[];
+    taskDisplayNamePattern?: string;
+    taskId?: string;
     updatedAtGte?: string;
     updatedAtLte?: string;
   },
@@ -1823,6 +2063,8 @@ export const useTaskInstanceServiceGetTaskInstances = <
         startDateGte,
         startDateLte,
         state,
+        taskDisplayNamePattern,
+        taskId,
         updatedAtGte,
         updatedAtLte,
       },
@@ -1847,6 +2089,8 @@ export const useTaskInstanceServiceGetTaskInstances = <
         startDateGte,
         startDateLte,
         state,
+        taskDisplayNamePattern,
+        taskId,
         updatedAtGte,
         updatedAtLte,
       }) as TData,
@@ -2503,6 +2747,7 @@ export const useVariableServiceGetVariable = <
  * @param data.limit
  * @param data.offset
  * @param data.orderBy
+ * @param data.variableKeyPattern
  * @returns VariableCollectionResponse Successful Response
  * @throws ApiError
  */
@@ -2515,21 +2760,28 @@ export const useVariableServiceGetVariables = <
     limit,
     offset,
     orderBy,
+    variableKeyPattern,
   }: {
     limit?: number;
     offset?: number;
     orderBy?: string;
+    variableKeyPattern?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseVariableServiceGetVariablesKeyFn(
-      { limit, offset, orderBy },
+      { limit, offset, orderBy, variableKeyPattern },
       queryKey,
     ),
     queryFn: () =>
-      VariableService.getVariables({ limit, offset, orderBy }) as TData,
+      VariableService.getVariables({
+        limit,
+        offset,
+        orderBy,
+        variableKeyPattern,
+      }) as TData,
     ...options,
   });
 /**
@@ -3716,7 +3968,7 @@ export const useVariableServicePatchVariable = <
  * Delete Asset Queued Events
  * Delete queued asset events for an asset.
  * @param data The data for the request.
- * @param data.uri
+ * @param data.assetId
  * @param data.before
  * @returns void Successful Response
  * @throws ApiError
@@ -3731,8 +3983,8 @@ export const useAssetServiceDeleteAssetQueuedEvents = <
       TData,
       TError,
       {
+        assetId: number;
         before?: string;
-        uri: string;
       },
       TContext
     >,
@@ -3743,15 +3995,15 @@ export const useAssetServiceDeleteAssetQueuedEvents = <
     TData,
     TError,
     {
+      assetId: number;
       before?: string;
-      uri: string;
     },
     TContext
   >({
-    mutationFn: ({ before, uri }) =>
+    mutationFn: ({ assetId, before }) =>
       AssetService.deleteAssetQueuedEvents({
+        assetId,
         before,
-        uri,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -3802,7 +4054,7 @@ export const useAssetServiceDeleteDagAssetQueuedEvents = <
  * Delete a queued asset event for a DAG.
  * @param data The data for the request.
  * @param data.dagId
- * @param data.uri
+ * @param data.assetId
  * @param data.before
  * @returns void Successful Response
  * @throws ApiError
@@ -3817,9 +4069,9 @@ export const useAssetServiceDeleteDagAssetQueuedEvent = <
       TData,
       TError,
       {
+        assetId: number;
         before?: string;
         dagId: string;
-        uri: string;
       },
       TContext
     >,
@@ -3830,17 +4082,17 @@ export const useAssetServiceDeleteDagAssetQueuedEvent = <
     TData,
     TError,
     {
+      assetId: number;
       before?: string;
       dagId: string;
-      uri: string;
     },
     TContext
   >({
-    mutationFn: ({ before, dagId, uri }) =>
+    mutationFn: ({ assetId, before, dagId }) =>
       AssetService.deleteDagAssetQueuedEvent({
+        assetId,
         before,
         dagId,
-        uri,
       }) as unknown as Promise<TData>,
     ...options,
   });

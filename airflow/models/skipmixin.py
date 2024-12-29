@@ -21,23 +21,21 @@ from collections.abc import Iterable, Sequence
 from types import GeneratorType
 from typing import TYPE_CHECKING
 
-from sqlalchemy import update
+from sqlalchemy import tuple_, update
 
 from airflow.exceptions import AirflowException
 from airflow.models.taskinstance import TaskInstance
 from airflow.utils import timezone
 from airflow.utils.log.logging_mixin import LoggingMixin
 from airflow.utils.session import NEW_SESSION, provide_session
-from airflow.utils.sqlalchemy import tuple_in_condition
 from airflow.utils.state import TaskInstanceState
 
 if TYPE_CHECKING:
-    from sqlalchemy import Session
+    from sqlalchemy.orm import Session
 
     from airflow.models.dagrun import DagRun
     from airflow.models.operator import Operator
     from airflow.sdk.definitions.node import DAGNode
-    from airflow.serialization.pydantic.dag_run import DagRunPydantic
 
 # The key used by SkipMixin to store XCom data.
 XCOM_SKIPMIXIN_KEY = "skipmixin_key"
@@ -61,7 +59,7 @@ class SkipMixin(LoggingMixin):
 
     @staticmethod
     def _set_state_to_skipped(
-        dag_run: DagRun | DagRunPydantic,
+        dag_run: DagRun,
         tasks: Sequence[str] | Sequence[tuple[str, int]],
         session: Session,
     ) -> None:
@@ -75,7 +73,7 @@ class SkipMixin(LoggingMixin):
                     .where(
                         TaskInstance.dag_id == dag_run.dag_id,
                         TaskInstance.run_id == dag_run.run_id,
-                        tuple_in_condition((TaskInstance.task_id, TaskInstance.map_index), tasks),
+                        tuple_(TaskInstance.task_id, TaskInstance.map_index).in_(tasks),
                     )
                     .values(state=TaskInstanceState.SKIPPED, start_date=now, end_date=now)
                     .execution_options(synchronize_session=False)
@@ -95,7 +93,7 @@ class SkipMixin(LoggingMixin):
     @provide_session
     def skip(
         self,
-        dag_run: DagRun | DagRunPydantic,
+        dag_run: DagRun,
         tasks: Iterable[DAGNode],
         map_index: int = -1,
         session: Session = NEW_SESSION,

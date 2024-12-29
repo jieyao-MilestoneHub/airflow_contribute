@@ -52,9 +52,9 @@ from airflow.utils.session import create_session
 from airflow.utils.state import State, TaskInstanceState
 from airflow.utils.types import DagRunType
 
-from tests_common.test_utils.compat import AIRFLOW_V_3_0_PLUS
 from tests_common.test_utils.config import conf_vars
 from tests_common.test_utils.db import clear_db_pools, clear_db_runs
+from tests_common.test_utils.version_compat import AIRFLOW_V_3_0_PLUS
 
 if AIRFLOW_V_3_0_PLUS:
     from airflow.utils.types import DagRunTriggeredByType
@@ -496,6 +496,8 @@ class TestCliTasks:
                 mock.patch(
                     "airflow.executors.executor_loader.ExecutorLoader.get_default_executor"
                 ) as get_default_mock,
+                mock.patch("airflow.executors.local_executor.SimpleQueue"),  # Prevent a task being queued
+                mock.patch("airflow.executors.local_executor.LocalExecutor.end"),
             ):
                 EmptyOperator(task_id="task1")
                 EmptyOperator(task_id="task2", executor="foo_executor_alias")

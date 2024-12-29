@@ -89,7 +89,27 @@ export const $AppBuilderViewResponse = {
   description: "Serializer for AppBuilder View responses.",
 } as const;
 
-export const $AssetAliasSchema = {
+export const $AssetAliasCollectionResponse = {
+  properties: {
+    asset_aliases: {
+      items: {
+        $ref: "#/components/schemas/AssetAliasResponse",
+      },
+      type: "array",
+      title: "Asset Aliases",
+    },
+    total_entries: {
+      type: "integer",
+      title: "Total Entries",
+    },
+  },
+  type: "object",
+  required: ["asset_aliases", "total_entries"],
+  title: "AssetAliasCollectionResponse",
+  description: "Asset alias collection response.",
+} as const;
+
+export const $AssetAliasResponse = {
   properties: {
     id: {
       type: "integer",
@@ -106,8 +126,8 @@ export const $AssetAliasSchema = {
   },
   type: "object",
   required: ["id", "name", "group"],
-  title: "AssetAliasSchema",
-  description: "Asset alias serializer for assets.",
+  title: "AssetAliasResponse",
+  description: "Asset alias serializer for responses.",
 } as const;
 
 export const $AssetCollectionResponse = {
@@ -159,10 +179,6 @@ export const $AssetEventResponse = {
     asset_id: {
       type: "integer",
       title: "Asset Id",
-    },
-    uri: {
-      type: "string",
-      title: "Uri",
     },
     extra: {
       anyOf: [
@@ -229,7 +245,6 @@ export const $AssetEventResponse = {
   required: [
     "id",
     "asset_id",
-    "uri",
     "source_map_index",
     "created_dagruns",
     "timestamp",
@@ -293,7 +308,7 @@ export const $AssetResponse = {
     },
     aliases: {
       items: {
-        $ref: "#/components/schemas/AssetAliasSchema",
+        $ref: "#/components/schemas/AssetAliasResponse",
       },
       type: "array",
       title: "Aliases",
@@ -1005,9 +1020,9 @@ export const $ConnectionTestResponse = {
 
 export const $CreateAssetEventsBody = {
   properties: {
-    uri: {
-      type: "string",
-      title: "Uri",
+    asset_id: {
+      type: "integer",
+      title: "Asset Id",
     },
     extra: {
       type: "object",
@@ -1016,7 +1031,7 @@ export const $CreateAssetEventsBody = {
   },
   additionalProperties: false,
   type: "object",
-  required: ["uri"],
+  required: ["asset_id"],
   title: "CreateAssetEventsBody",
   description: "Create asset events request.",
 } as const;
@@ -1133,7 +1148,7 @@ export const $DAGDetailsResponse = {
     },
     tags: {
       items: {
-        $ref: "#/components/schemas/DagTagPydantic",
+        $ref: "#/components/schemas/DagTagResponse",
       },
       type: "array",
       title: "Tags",
@@ -1506,7 +1521,7 @@ export const $DAGResponse = {
     },
     tags: {
       items: {
-        $ref: "#/components/schemas/DagTagPydantic",
+        $ref: "#/components/schemas/DagTagResponse",
       },
       type: "array",
       title: "Tags",
@@ -1637,6 +1652,11 @@ export const $DAGRunClearBody = {
       title: "Dry Run",
       default: true,
     },
+    only_failed: {
+      type: "boolean",
+      title: "Only Failed",
+      default: false,
+    },
   },
   type: "object",
   title: "DAGRunClearBody",
@@ -1703,14 +1723,7 @@ export const $DAGRunPatchStates = {
 export const $DAGRunResponse = {
   properties: {
     dag_run_id: {
-      anyOf: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
+      type: "string",
       title: "Dag Run Id",
     },
     dag_id: {
@@ -2252,7 +2265,7 @@ export const $DAGWithLatestDagRunsResponse = {
     },
     tags: {
       items: {
-        $ref: "#/components/schemas/DagTagPydantic",
+        $ref: "#/components/schemas/DagTagResponse",
       },
       type: "array",
       title: "Tags",
@@ -2590,7 +2603,7 @@ export const $DagStatsStateResponse = {
   description: "DagStatsState serializer for responses.",
 } as const;
 
-export const $DagTagPydantic = {
+export const $DagTagResponse = {
   properties: {
     name: {
       type: "string",
@@ -2603,9 +2616,8 @@ export const $DagTagPydantic = {
   },
   type: "object",
   required: ["name", "dag_id"],
-  title: "DagTagPydantic",
-  description:
-    "Serializable representation of the DagTag ORM SqlAlchemyModel used by internal API.",
+  title: "DagTagResponse",
+  description: "DAG Tag serializer for responses.",
 } as const;
 
 export const $DagWarningType = {
@@ -2649,6 +2661,17 @@ export const $EdgeResponse = {
     target_id: {
       type: "string",
       title: "Target Id",
+    },
+    is_source_asset: {
+      anyOf: [
+        {
+          type: "boolean",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Is Source Asset",
     },
   },
   type: "object",
@@ -2836,6 +2859,245 @@ export const $FastAPIAppResponse = {
   required: ["app", "url_prefix", "name"],
   title: "FastAPIAppResponse",
   description: "Serializer for Plugin FastAPI App responses.",
+} as const;
+
+export const $GridDAGRunwithTIs = {
+  properties: {
+    dag_run_id: {
+      type: "string",
+      title: "Dag Run Id",
+    },
+    queued_at: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Queued At",
+    },
+    start_date: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Start Date",
+    },
+    end_date: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "End Date",
+    },
+    state: {
+      $ref: "#/components/schemas/DagRunState",
+    },
+    run_type: {
+      $ref: "#/components/schemas/DagRunType",
+    },
+    data_interval_start: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Data Interval Start",
+    },
+    data_interval_end: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Data Interval End",
+    },
+    version_number: {
+      anyOf: [
+        {
+          type: "string",
+          format: "uuid",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Version Number",
+    },
+    note: {
+      anyOf: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Note",
+    },
+    task_instances: {
+      items: {
+        $ref: "#/components/schemas/GridTaskInstanceSummary",
+      },
+      type: "array",
+      title: "Task Instances",
+    },
+  },
+  type: "object",
+  required: [
+    "dag_run_id",
+    "queued_at",
+    "start_date",
+    "end_date",
+    "state",
+    "run_type",
+    "data_interval_start",
+    "data_interval_end",
+    "version_number",
+    "note",
+    "task_instances",
+  ],
+  title: "GridDAGRunwithTIs",
+  description: "DAG Run model for the Grid UI.",
+} as const;
+
+export const $GridResponse = {
+  properties: {
+    dag_runs: {
+      items: {
+        $ref: "#/components/schemas/GridDAGRunwithTIs",
+      },
+      type: "array",
+      title: "Dag Runs",
+    },
+  },
+  type: "object",
+  required: ["dag_runs"],
+  title: "GridResponse",
+  description: "Response model for the Grid UI.",
+} as const;
+
+export const $GridTaskInstanceSummary = {
+  properties: {
+    task_id: {
+      type: "string",
+      title: "Task Id",
+    },
+    try_number: {
+      type: "integer",
+      title: "Try Number",
+    },
+    start_date: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Start Date",
+    },
+    end_date: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "End Date",
+    },
+    queued_dttm: {
+      anyOf: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Queued Dttm",
+    },
+    child_states: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: "integer",
+          },
+          type: "object",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Child States",
+    },
+    task_count: {
+      type: "integer",
+      title: "Task Count",
+    },
+    state: {
+      anyOf: [
+        {
+          $ref: "#/components/schemas/TaskInstanceState",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    note: {
+      anyOf: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Note",
+    },
+  },
+  type: "object",
+  required: [
+    "task_id",
+    "try_number",
+    "start_date",
+    "end_date",
+    "queued_dttm",
+    "child_states",
+    "task_count",
+    "state",
+    "note",
+  ],
+  title: "GridTaskInstanceSummary",
+  description: "Task Instance Summary model for the Grid UI.",
 } as const;
 
 export const $HTTPExceptionResponse = {
@@ -3171,7 +3433,16 @@ export const $NodeResponse = {
     },
     type: {
       type: "string",
-      enum: ["join", "task", "asset_condition"],
+      enum: [
+        "join",
+        "task",
+        "asset-condition",
+        "asset",
+        "asset-alias",
+        "dag",
+        "sensor",
+        "trigger",
+      ],
       title: "Type",
     },
     operator: {
@@ -3184,6 +3455,18 @@ export const $NodeResponse = {
         },
       ],
       title: "Operator",
+    },
+    asset_condition_type: {
+      anyOf: [
+        {
+          type: "string",
+          enum: ["or-gate", "and-gate"],
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Asset Condition Type",
     },
   },
   type: "object",
@@ -3620,13 +3903,13 @@ export const $QueuedEventCollectionResponse = {
 
 export const $QueuedEventResponse = {
   properties: {
-    uri: {
-      type: "string",
-      title: "Uri",
-    },
     dag_id: {
       type: "string",
       title: "Dag Id",
+    },
+    asset_id: {
+      type: "integer",
+      title: "Asset Id",
     },
     created_at: {
       type: "string",
@@ -3635,7 +3918,7 @@ export const $QueuedEventResponse = {
     },
   },
   type: "object",
-  required: ["uri", "dag_id", "created_at"],
+  required: ["dag_id", "asset_id", "created_at"],
   title: "QueuedEventResponse",
   description: "Queued Event serializer for responses..",
 } as const;
@@ -5199,6 +5482,7 @@ export const $VariableBody = {
   properties: {
     key: {
       type: "string",
+      maxLength: 250,
       title: "Key",
     },
     value: {
@@ -5278,9 +5562,13 @@ export const $VariableResponse = {
       ],
       title: "Description",
     },
+    is_encrypted: {
+      type: "boolean",
+      title: "Is Encrypted",
+    },
   },
   type: "object",
-  required: ["key", "value", "description"],
+  required: ["key", "value", "description", "is_encrypted"],
   title: "VariableResponse",
   description: "Variable serializer for responses.",
 } as const;
@@ -5357,6 +5645,10 @@ export const $XComResponse = {
       type: "string",
       title: "Dag Id",
     },
+    run_id: {
+      type: "string",
+      title: "Run Id",
+    },
   },
   type: "object",
   required: [
@@ -5366,6 +5658,7 @@ export const $XComResponse = {
     "map_index",
     "task_id",
     "dag_id",
+    "run_id",
   ],
   title: "XComResponse",
   description: "Serializer for a xcom item.",
@@ -5399,6 +5692,10 @@ export const $XComResponseNative = {
       type: "string",
       title: "Dag Id",
     },
+    run_id: {
+      type: "string",
+      title: "Run Id",
+    },
     value: {
       title: "Value",
     },
@@ -5411,6 +5708,7 @@ export const $XComResponseNative = {
     "map_index",
     "task_id",
     "dag_id",
+    "run_id",
     "value",
   ],
   title: "XComResponseNative",
@@ -5445,6 +5743,10 @@ export const $XComResponseString = {
       type: "string",
       title: "Dag Id",
     },
+    run_id: {
+      type: "string",
+      title: "Run Id",
+    },
     value: {
       anyOf: [
         {
@@ -5465,6 +5767,7 @@ export const $XComResponseString = {
     "map_index",
     "task_id",
     "dag_id",
+    "run_id",
     "value",
   ],
   title: "XComResponseString",
